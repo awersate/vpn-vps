@@ -1,0 +1,32 @@
+- name: clone repo
+  git:
+    repo: https://github.com/kylemanna/docker-openvpn.git
+    dest: /root/docker-openvpn
+    clone: yes
+
+- name: install pip docker
+  pip:
+    name:
+      - docker
+
+- name: create docker volume
+  docker_volume:
+    name: '{{ OVPN_DATA }}'
+
+- name: copy openvpn volume data files
+  copy:
+    src: '{{ path_to_volume_data }}'
+    dest: '{{ default_docker_volume_path }}/{{ OVPN_DATA }}/'
+
+- name: run openvpn in container
+  docker_container:
+    name: boris-openvpn
+    image: kylemanna/openvpn
+    state: started
+    capabilities: NET_ADMIN
+    detach: yes
+    ports:
+      - "1194:1194/udp"
+    volumes: 
+      - "{{ volume_path }}:/etc/openvpn"
+

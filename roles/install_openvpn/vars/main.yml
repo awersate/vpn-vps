@@ -1,0 +1,4 @@
+OVPN_DATA: ovpn-data-VDSina-borisVPN
+volume_path: "/var/lib/docker/volumes/{{ OVPN_DATA }}/_data"
+default_docker_volume_path: /var/lib/docker/volumes
+path_to_volume_data: "{{ volume_path }}"

@@ -1,0 +1,4 @@
+[vpn]
+# 195.19.96.121 vpn test rtk
+88.218.168.81 #ansible_port=32122
+

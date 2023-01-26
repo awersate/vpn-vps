@@ -1,0 +1,7 @@
+- name: ensure required pip-packages are installed
+  hosts: localhost
+
+- hosts: all
+  roles:
+    - name: configure_os
+    - name: install_openvpn

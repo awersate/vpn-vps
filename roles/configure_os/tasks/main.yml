@@ -1,0 +1,64 @@
+- name: Find all of the repo files 
+  find:
+    paths: "/etc/yum.repos.d/"
+    patterns: "*.repo"
+  register: repos
+
+- name: configure repos url
+  replace:
+    path: '{{ item.path }}'
+    regexp: '\w+:\/\/mirror\.centos\.org'
+    replace: 'http://vault.centos.org'
+  loop: '{{ repos.files }}'
+
+- name: add dns into /etc/resolv.conf
+  lineinfile:
+    path: /etc/resolv.conf
+    line: 'nameserver 8.8.8.8'
+
+- name: yum update
+  yum:
+    name: '*'
+    state: latest
+    
+- name: install yum-utils, git, python 3, pip
+  yum:
+    name: 
+      - yum-utils
+      - git
+      - python3
+      - python3-pip
+    state: present
+
+- name: add docker repo
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+
+- name: install docker
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+
+- name: start docker
+  systemd:
+    name: docker
+    state: started
+  remote_user: root
+  retries: 3
+  delay: 5
+  register: result
+  until: result.changed == false
+
+- name:  enable docker
+  systemd:
+    name: docker    
+    enabled: yes
+  remote_user: root
+  retries: 3
+  delay: 5
+  register: result
+  until: result.changed == false
