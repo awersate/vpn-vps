@@ -1,8 +1,16 @@
+- name: yum update
+  yum:
+    name: '*'
+    state: latest
+  ignore_errors: true
+  register: yum_result
+
 - name: Find all of the repo files 
   find:
     paths: "/etc/yum.repos.d/"
     patterns: "*.repo"
   register: repos
+  when: yum_result|failed
 
 - name: configure repos url
   replace:
@@ -10,24 +18,31 @@
     regexp: '\w+:\/\/mirror\.centos\.org'
     replace: 'http://vault.centos.org'
   loop: '{{ repos.files }}'
-
-- name: add dns into /etc/resolv.conf
-  lineinfile:
-    path: /etc/resolv.conf
-    line: 'nameserver 8.8.8.8'
+  when: yum_result|failed
 
 - name: yum update
   yum:
     name: '*'
     state: latest
-    
-- name: install yum-utils, git, python 3, pip
+  ignore_errors: true
+  register: yum_result
+  when: yum_result|failed
+   
+- name: add dns into /etc/resolv.conf
+  lineinfile:
+    path: /etc/resolv.conf
+    line: 'nameserver 8.8.8.8'
+ 
+- name: install yum-utils, git, python 3, pip, vim
   yum:
     name: 
       - yum-utils
       - git
       - python3
       - python3-pip
+      - vim
+      - epel-release
+      - openvpn
     state: present
 
 - name: add docker repo
@@ -62,3 +77,68 @@
   delay: 5
   register: result
   until: result.changed == false
+
+- name: install pip docker
+  pip:
+    name:
+      - docker
+
+- name: Update SSH port in sshd_config
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '.*Port .*'
+    replace: 'Port {{ ssh_port }}'   
+  notify: Restart SSH daemon
+
+- name: Create new user
+  user:
+    name: "{{ username }}"
+    password: "{{ password }}"
+    shell: /bin/bash
+    createhome: yes
+
+- name: Add user to sudoers file
+  lineinfile:
+    path: /etc/sudoers
+    line: "{{ username }} ALL=(ALL) NOPASSWD: ALL"
+    validate: "/usr/sbin/visudo -cf %s"
+
+- name: Add user to docker group
+  user:
+    name: "{{ username }}"
+    groups: docker
+
+- name: Set new root password
+  user:
+    name: root
+    password: "{{ root_passw }}"
+
+- name: Add TCP ports to firewalld
+  firewalld:
+    port: "{{ item }}/tcp"
+    state: enabled
+    permanent: yes
+  with_items: "{{ firewall_tcp_ports }}"
+
+- name: Add UDP ports to firewalld
+  firewalld:
+    port: "{{ item }}/udp"
+    state: enabled
+    permanent: yes
+  with_items: "{{ firewall_udp_ports }}"
+
+- name: Disallow password authentication for SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    backup: yes
+  notify: Restart sshd
+
+- name: Allow key-based authentication for SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PubkeyAuthentication"
+    line: "PubkeyAuthentication yes"
+    backup: yes
+  notify: Restart sshd

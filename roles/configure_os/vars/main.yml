@@ -1,0 +1,21 @@
+---
+# Port for ssh
+ssh_port: 32122
+
+# Create user for enter
+username: ""
+password: ""
+
+# Change passwd for root
+root_passw: ""
+
+# Firewalld ports allow
+firewall_tcp_ports:
+  - 32122
+  - 1111
+  - 1194
+
+firewall_udp_ports:
+  - 32122
+  - 1111
+  - 1194

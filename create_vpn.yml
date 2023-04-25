@@ -5,3 +5,9 @@
   roles:
     - name: configure_os
     - name: install_openvpn
+
+  handlers:
+    - name: Restart SSH daemon
+      service:
+        name: sshd
+        state: restarted

@@ -4,11 +4,6 @@
     dest: /root/docker-openvpn
     clone: yes
 
-- name: install pip docker
-  pip:
-    name:
-      - docker
-
 - name: create docker volume
   docker_volume:
     name: '{{ OVPN_DATA }}'

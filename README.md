@@ -42,6 +42,42 @@ Perhaps iptables or your kernel needs to be upgraded.
 решение 
 ```
 sudo modprobe ip_tables
-sudo echo 'ip_tables' >> /etc/modules 
+sudo echo 'ip_tables' >> /etc/modules or to /etc/modules-load.d/custom.conf
+```
+
+Если хотим открыть на нестандартных портах то либо правим скрипт по созданию сертов лиюо после создания серта заходим в него и руками правим порт
+```
+remote 1.1.1.1 1194 udp на
+remote 1.1.1.1 1111 udp 
+```
+Так же необходимо будет поправить конфиг в
+Пример 
+```
+vi /var/lib/docker/volumes/$OVPN_DATA/_data/openvpn.conf
+proto tcp
+# Rely on Docker to do port mapping, internally always 1194
+port 1111 ТУТ
+dev tun0
+status /tmp/openvpn-status.log
+```
+Для доп vpn который будет подключен с хоста создаем сервис
+'/etc/systemd/system/openvpn.service'
+```
+[Unit]
+Description=OpenVPN 
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/openvpn --config /path/to/config.ovpn 
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+```
+systemctl daemon-reload
+systemctl enable openvpn.service
+systemctl start openvpn.service
 ```
 
